@@ -1,30 +1,30 @@
 # WAHA — WhatsApp Gateway
 
-**WAHA** adalah platform **WhatsApp Gateway** yang dibangun dengan arsitektur **hybrid** dan mendukung banyak fungsi: pengelolaan device/session (termasuk QR di dashboard), kirim pesan tunggal, broadcast berqueue (rate limit), webhook untuk auto-reply berbasis AI (OpenAI/Gemini), serta REST API dan dashboard untuk mengoperasikan semuanya.
+**WAHA** is a **WhatsApp Gateway** platform built with a **hybrid architecture**, supporting multiple functions: device/session management (including QR in the dashboard), single message sending, queued broadcasts (with rate limiting), AI-based auto-reply webhooks (OpenAI/Gemini), and a REST API plus dashboard on top.
 
-## Arsitektur
+## Architecture
 
-```
+```text
 Dashboard (Next.js :3001)
         │
         ▼
    API Gateway (Node :3000)
         │
         ├──► WWebJS Engine (Node :8090)  ← WhatsApp session (whatsapp-web.js)
-        └──► Redis (optional, untuk broadcast/queue)
+        └──► Redis (optional, for broadcast/queue)
 ```
 
-- **wwebjs-engine** — Engine WhatsApp (QR, kirim pesan). Menyimpan sesi login WhatsApp secara lokal.
-- **api-gateway** — REST API (devices, messages, broadcast, webhook). Menggunakan database SQLite lokal di folder `data/`.
-- **dashboard** — UI: Device Management, Chat, Broadcast. Proxy API lewat Next.js rewrites ke `:3000`.
+- **wwebjs-engine** — WhatsApp engine (QR, send messages). Stores WhatsApp login sessions locally.
+- **api-gateway** — REST API (devices, messages, broadcast, webhook). Uses a local SQLite database under the `data/` folder.
+- **dashboard** — UI: Device Management, Chat, Broadcast, Analytics. Proxies API calls via Next.js rewrites to `:3000`.
 
-## Prasyarat
+## Requirements
 
 - Node.js 18+
-- Redis (untuk fitur broadcast/queue; jalankan `redis-server` atau Docker)
-- (Opsional) Chrome/Chromium — untuk whatsapp-web.js; bisa set `CHROME_PATH` jika perlu
+- Redis (for broadcast/queue features; run `redis-server` or use Docker)
+- (Optional) Chrome/Chromium — for whatsapp-web.js; you can set `CHROME_PATH` if needed
 
-## Cara Menjalankan
+## How to Run (development)
 
 ### 1. WWebJS Engine (port 8090)
 
@@ -34,8 +34,8 @@ npm install
 node server.js
 ```
 
-- Pertama kali: butuh scan QR. Buka dashboard → Device Management → Add Device → Connect / QR, lalu scan.
-- Session tersimpan di `.wwebjs_auth` (root project). Setelah sekali login, berikutnya auto connect.
+- First time: you need to scan a QR code. Open the dashboard → Device Management → Add Device → Connect / QR, then scan with WhatsApp.
+- Session is stored in `.wwebjs_auth` (project root). After the first login, the engine will auto-connect.
 
 ### 2. API Gateway (port 3000)
 
@@ -45,8 +45,8 @@ npm install
 ENGINE_URL=http://localhost:8090 REDIS_URL=redis://localhost:6379 node server.js
 ```
 
-- `ENGINE_URL` wajib mengarah ke engine (default `http://localhost:8090`).
-- `REDIS_URL` untuk broadcast/queue (default `redis://localhost:6379`).
+- `ENGINE_URL` must point to the engine (default `http://localhost:8090`).
+- `REDIS_URL` points to Redis for broadcast/queue (default `redis://localhost:6379`).
 
 ### 3. Dashboard (port 3001)
 
@@ -56,76 +56,76 @@ npm install
 npm run dev
 ```
 
-Buka: **http://localhost:3001**
+Open: **http://localhost:3001**
 
-### 4. Redis (untuk broadcast)
+### 4. Redis (for broadcast)
 
 ```bash
 redis-server
-# atau: docker run -d -p 6379:6379 redis:7
+# or: docker run -d -p 6379:6379 redis:7
 ```
 
 ## Environment Variables
 
-| Variabel        | Dipakai di    | Default                  | Keterangan                          |
-|-----------------|---------------|--------------------------|-------------------------------------|
-| `ENGINE_URL`    | api-gateway   | `http://localhost:8090`  | URL WWebJS engine                   |
-| `REDIS_URL`     | api-gateway   | `redis://localhost:6379` | URL Redis (broadcast/queue)         |
-| `PORT`          | api-gateway   | `3000`                   | Port API                            |
-| `WWEBJS_PORT`   | wwebjs-engine | `8090`                   | Port engine                         |
-| `OPENAI_API_KEY`| api-gateway   | -                        | Untuk AI auto-reply (opsional)      |
-| `GEMINI_API_KEY`| api-gateway   | -                        | Alternatif AI (opsional)            |
-| `AI_PROVIDER`   | api-gateway   | `openai`                 | `openai` atau `gemini`              |
-| `JWT_SECRET`    | api-gateway   | (default internal)       | Rahasia untuk JWT; wajib di production |
+| Variable        | Used in       | Default                  | Description                          |
+|-----------------|---------------|--------------------------|--------------------------------------|
+| `ENGINE_URL`    | api-gateway   | `http://localhost:8090`  | WWebJS engine URL                    |
+| `REDIS_URL`     | api-gateway   | `redis://localhost:6379` | Redis URL (broadcast/queue)         |
+| `PORT`          | api-gateway   | `3000`                   | API port                             |
+| `WWEBJS_PORT`   | wwebjs-engine | `8090`                   | Engine port                          |
+| `OPENAI_API_KEY`| api-gateway   | -                        | For AI auto-reply (optional)        |
+| `GEMINI_API_KEY`| api-gateway   | -                        | Alternative AI provider (optional)  |
+| `AI_PROVIDER`   | api-gateway   | `openai`                 | `openai` or `gemini`                |
+| `JWT_SECRET`    | api-gateway   | (internal dev default)   | Secret for JWT; must be set in prod |
 
-## Endpoint API (via api-gateway :3000)
+## API Endpoints (via api-gateway :3000)
 
-| Method | Path | Keterangan |
-|--------|------|------------|
-| GET    | `/` | Health |
-| GET    | `/devices` | Daftar device (WWebJS: satu device `default`) |
-| POST   | `/devices` | Add device (body: `{ "deviceId": "default" }`) |
-| DELETE | `/devices/:deviceId` | Hapus device (logical) |
-| POST   | `/devices/:deviceId/connect` | Ambil QR untuk scan |
-| GET    | `/devices/:deviceId/status` | Status device |
-| POST   | `/messages/send` | Kirim pesan (body: `deviceId`, `to`, `text`) |
-| POST   | `/engine/send` | Alias kirim pesan |
+| Method | Path | Description |
+|--------|------|-------------|
+| GET    | `/` | Health check |
+| GET    | `/devices` | List devices (WWebJS: single logical device `default`) |
+| POST   | `/devices` | Add device (body: `{ \"deviceId\": \"default\" }`) |
+| DELETE | `/devices/:deviceId` | Delete device (logical) |
+| POST   | `/devices/:deviceId/connect` | Get QR code for scanning |
+| GET    | `/devices/:deviceId/status` | Device status |
+| POST   | `/messages/send` | Send message (body: `deviceId`, `to`, `text`) |
+| POST   | `/engine/send` | Alias for send message |
 | POST   | `/broadcast/campaign` | Broadcast (body: `deviceId`, `text`, `recipients[]`) |
-| GET    | `/broadcast/job/:jobId` | Status job broadcast |
-| POST   | `/webhook/incoming` | Auto-reply AI (body: `deviceId`, `from`, `text`) |
-| POST   | `/auth/register` | Daftar user (body: `name`, `email`, `password`) |
+| GET    | `/broadcast/job/:jobId` | Broadcast job status |
+| POST   | `/webhook/incoming` | AI auto-reply hook (body: `deviceId`, `from`, `text`) |
+| POST   | `/auth/register` | Register user (body: `name`, `email`, `password`) |
 | POST   | `/auth/login` | Login (body: `email`, `password`) → `{ token, user }` |
-| GET    | `/auth/me`    | User saat ini (header: `Authorization: Bearer <token>`) |
+| GET    | `/auth/me`    | Current user (header: `Authorization: Bearer <token>`) |
 
 ## Dashboard
 
 - **Overview** — `/dashboard`
-- **Device Management** — `/dashboard/devices` (add device, tampil QR, connect, delete)
-- **Chat** — `/dashboard/chat` (kirim satu pesan)
-- **Broadcast** — `/dashboard/broadcast` (campaign + cek status job)
-- **Analytics** — `/dashboard/analytics` (statistik device terhubung & placeholder pesan/broadcast)
-- **Login** — `/login` (email + password, token disimpan di localStorage)
+- **Device Management** — `/dashboard/devices` (add device, show QR, connect, delete)
+- **Chat** — `/dashboard/chat` (send a single message)
+- **Broadcast** — `/dashboard/broadcast` (campaign + check job status)
+- **Analytics** — `/dashboard/analytics` (connected devices stats & placeholders)
+- **Login** — `/login` (email + password, token stored in `localStorage`)
 
-Dashboard memanggil API lewat rewrite `/api/*` → `http://localhost:3000/*`. Pastikan api-gateway jalan saat pakai dashboard.
+The dashboard calls the API through a rewrite `/api/*` → `http://localhost:3000/*` (or `API_GATEWAY_URL` in Docker). Make sure the API gateway is running when using the dashboard.
 
-## Autentikasi
+## Authentication
 
-- **Register:** `POST /auth/register` dengan `{ name, email, password }`.
-- **Login:** `POST /auth/login` dengan `{ email, password }` → respons berisi `token` (JWT) dan `user`. Set `JWT_SECRET` di env api-gateway untuk production.
-- **Dashboard** dilindungi: tanpa token valid (atau jika `GET /auth/me` mengembalikan 401), pengguna diarahkan ke `/login`. Tombol **Logout** di sidebar menghapus token dan mengarahkan ke `/login`.
+- **Register:** `POST /auth/register` with `{ name, email, password }`.
+- **Login:** `POST /auth/login` with `{ email, password }` → response contains a `token` (JWT) and `user`. Set `JWT_SECRET` in the api-gateway environment for production.
+- **Protected dashboard:** without a valid token (or if `GET /auth/me` returns 401), users are redirected to `/login`. The **Logout** button in the sidebar clears the token and redirects to `/login`.
 
-## File & Folder Penting
+## Important Files & Folders
 
-| Path/folder | Keterangan umum |
-|-------------|-----------------|
-| `.wwebjs_auth/` | Penyimpanan sesi WhatsApp lokal (jangan commit ke git, jangan dibagikan) |
-| `data/` | Penyimpanan database lokal untuk API |
-| `dump.rdb` | File persistence Redis (jika Redis dikonfigurasi menyimpan ke disk) |
-| `wwebjs-engine/` | Kode engine WhatsApp |
-| `api-gateway/` | Kode REST API |
-| `dashboard/` | Kode Next.js dashboard |
+| Path/folder | General description |
+|-------------|---------------------|
+| `.wwebjs_auth/` | Local WhatsApp session storage (do not commit to git, do not share) |
+| `data/` | Local database storage for the API |
+| `dump.rdb` | Redis persistence file (if Redis is configured to persist to disk) |
+| `wwebjs-engine/` | WhatsApp engine code |
+| `api-gateway/` | REST API code |
+| `dashboard/` | Next.js dashboard code |
 
-## Build production (dashboard)
+## Build (dashboard, production)
 
 ```bash
 cd dashboard
@@ -133,7 +133,7 @@ npm run build
 npm run start   # listen :3001
 ```
 
-## Ringkasan perintah (development)
+## Quick commands (development)
 
 ```bash
 # Terminal 1 — Engine
@@ -145,25 +145,26 @@ cd api-gateway && ENGINE_URL=http://localhost:8090 REDIS_URL=redis://localhost:6
 # Terminal 3 — Dashboard
 cd dashboard && npm run dev
 
-# (Opsional) Terminal 4 — Redis
+# (Optional) Terminal 4 — Redis
 redis-server
 ```
 
-Lalu buka **http://localhost:3001**, masuk Device Management, Add Device → Connect / QR, scan dengan WhatsApp.
+Then open **http://localhost:3001**, go to Device Management, Add Device → Connect / QR, and scan the QR with WhatsApp.
 
-## Menjalankan dengan Docker
+## Run with Docker
 
 ```bash
-# Build dan jalankan semua service
+# Build and start all services
 docker compose up -d --build
 
-# Log
+# Logs
 docker compose logs -f wwebjs-engine
 ```
 
 - **Redis** — port 6379  
-- **WWebJS Engine** — port 8090 (session di volume `wwebjs_auth`)  
+- **WWebJS Engine** — port 8090 (session stored in `wwebjs_auth` volume)  
 - **API Gateway** — port 3000  
 - **Dashboard** — port 3001  
 
-Pertama kali: buka http://localhost:3001/dashboard/devices, Add Device → Connect / QR, scan QR. Untuk register user baru gunakan endpoint `POST /auth/register` di API gateway, lalu login lewat dashboard.
+First time: open http://localhost:3001/dashboard/devices, Add Device → Connect / QR, scan the QR. To register a new user, use the `POST /auth/register` endpoint on the API gateway, then log in via the dashboard.
+
