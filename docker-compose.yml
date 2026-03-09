@@ -1,0 +1,52 @@
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  wwebjs-engine:
+    build: ./wwebjs-engine
+    ports:
+      - "8090:8090"
+    environment:
+      - WWEBJS_PORT=8090
+      - NODE_ENV=production
+    volumes:
+      - wwebjs_auth:/data
+    environment:
+      - WWEBJS_DATA_PATH=/data
+    restart: unless-stopped
+
+  api-gateway:
+    build: ./api-gateway
+    ports:
+      - "3000:3000"
+    environment:
+      - ENGINE_URL=http://wwebjs-engine:8090
+      - REDIS_URL=redis://redis:6379
+      - NODE_ENV=production
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      - redis
+      - wwebjs-engine
+    restart: unless-stopped
+
+  dashboard:
+    build:
+      context: ./dashboard
+      args:
+        API_GATEWAY_URL: http://api-gateway:3000
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+    depends_on:
+      - api-gateway
+    restart: unless-stopped
+
+volumes:
+  redis_data:
+  wwebjs_auth:

@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+
+# Next.js build output
+dashboard/.next/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Env files
+.env
+.env.*
+
+# SQLite DB
+data/*.db
+data/*.sqlite
+
+# WhatsApp session (wwebjs)
+**/.wwebjs_auth/
+**/.wwebjs_cache/
+
+# Docker
+*.log
+
+# macOS
+.DS_Store
+
