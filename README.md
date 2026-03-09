@@ -14,8 +14,8 @@ Dashboard (Next.js :3001)
         └──► Redis (optional, untuk broadcast/queue)
 ```
 
-- **wwebjs-engine** — Engine WhatsApp (QR, kirim pesan). Session disimpan di `.wwebjs_auth`.
-- **api-gateway** — REST API (devices, messages, broadcast, webhook). Database SQLite di `data/whatsapp.db`.
+- **wwebjs-engine** — Engine WhatsApp (QR, kirim pesan). Menyimpan sesi login WhatsApp secara lokal.
+- **api-gateway** — REST API (devices, messages, broadcast, webhook). Menggunakan database SQLite lokal di folder `data/`.
 - **dashboard** — UI: Device Management, Chat, Broadcast. Proxy API lewat Next.js rewrites ke `:3000`.
 
 ## Prasyarat
@@ -116,11 +116,11 @@ Dashboard memanggil API lewat rewrite `/api/*` → `http://localhost:3000/*`. Pa
 
 ## File & Folder Penting
 
-| Path | Keterangan |
-|------|------------|
-| `.wwebjs_auth/` | Session WhatsApp (jangan hapus kalau mau tetap login) |
-| `data/whatsapp.db` | Database api-gateway (user, dll.) |
-| `dump.rdb` | Persistence Redis (jika pakai Redis di root) |
+| Path/folder | Keterangan umum |
+|-------------|-----------------|
+| `.wwebjs_auth/` | Penyimpanan sesi WhatsApp lokal (jangan commit ke git, jangan dibagikan) |
+| `data/` | Penyimpanan database lokal untuk API |
+| `dump.rdb` | File persistence Redis (jika Redis dikonfigurasi menyimpan ke disk) |
 | `wwebjs-engine/` | Kode engine WhatsApp |
 | `api-gateway/` | Kode REST API |
 | `dashboard/` | Kode Next.js dashboard |
@@ -166,4 +166,4 @@ docker compose logs -f wwebjs-engine
 - **API Gateway** — port 3000  
 - **Dashboard** — port 3001  
 
-Pertama kali: buka http://localhost:3001/dashboard/devices, Add Device → Connect / QR, scan QR. Untuk register user baru: `POST http://localhost:3000/auth/register` (lalu login lewat dashboard).
+Pertama kali: buka http://localhost:3001/dashboard/devices, Add Device → Connect / QR, scan QR. Untuk register user baru gunakan endpoint `POST /auth/register` di API gateway, lalu login lewat dashboard.
