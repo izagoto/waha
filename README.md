@@ -1,4 +1,4 @@
-# WAHA — WhatsApp Gateway
+# WAHA — WhatsApp Hybrid Automation
 
 **WAHA** is a **WhatsApp Gateway** platform built with a **hybrid architecture**, supporting multiple functions: device/session management (including QR in the dashboard), single message sending, queued broadcasts (with rate limiting), AI-based auto-reply webhooks (OpenAI/Gemini), and a REST API plus dashboard on top.
 
